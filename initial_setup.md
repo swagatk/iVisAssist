@@ -75,7 +75,6 @@ openclaw config set agents.defaults.model.primary "ollama/gemma4:31b-cloud"
 ```
 
 ## Step 5: Custom iSight Skill Creation
-## Step 5: Custom iSight Skill Creation
 OpenClaw blocks any custom skill whose target script resides outside the trusted workspace sandboxing root. We will define our skill in our standalone repository, and the `wearable_loop.py` script will safely symlink it into the secure zone dynamically.
 Create your skill blueprint file at `/home/pi/iVisAssist/skills/isight/SKILL.md`:
 ```
@@ -116,7 +115,7 @@ Paste the following shell execution commands:
 ```bash
 #!/bin/bash
 # Clean hardware snapshot from the imx708 lens
-rpicam-still -t 400 -o /home/pi/live_snap.jpg --width 640 --height 480 -n >/dev/null 2>&1
+rpicam-still -t 400 -o /home/pi/live_snap.jpg --width 320 --height 240 -n >/dev/null 2>&1
 
 # Return a success verification object back to the active OpenClaw frame
 echo '{"status": "success", "image_path": "/home/pi/live_snap.jpg"}'
@@ -128,11 +127,13 @@ chmod +x /home/pi/iVisAssist/skills/isight/capture.sh
 
 ## Step 6: Text-to-Speech (TTS) Configuration
 Configure OpenClaw's internal JSON configuration profile to use Microsoft's built-in neural audio provider (edge) to render synthetic descriptions on the Pi.
-Open your master configuration file:
+1. Open your master configuration file:
 ```
 nano ~/.openclaw/openclaw.json
 ```
-Scroll to the bottom and ensure your "messages" segment is formatted as follows:  "messages": {
+2. Scroll to the bottom and ensure your "messages" segment is formatted as follows:  
+```
+"messages": {
     "tts": {
       "auto": "always",
       "provider": "edge",
@@ -142,74 +143,27 @@ Scroll to the bottom and ensure your "messages" segment is formatted as follows:
       }
     }
   }
-Run diagnostic checks and restart OpenClaw:openclaw doctor --repair
+  ```
+3. Run diagnostic checks and restart OpenClaw:
+```
+openclaw doctor --repair
 openclaw gateway restart
-Verify your custom skill is successfully parsed and unblocked by checking your active tool indexes:openclaw skills list
-(You should see isight-vision displayed cleanly with a ✓ ready status in the table list).🔁 Step 7: Automated Wearable Controller LoopBecause standard terminal shell sessions treat synthetic audio files as text-channel message attachments, we execute a continuous python controller script inside your project workspace (/home/pi/iVisAssist/wearable_loop.py) to automate hands-free captures and route clean speech natively.Create your controller file:nano /home/pi/iVisAssist/wearable_loop.py
-Paste the following automated execution code:import subprocess
-import time
-import sys
+```
+4. Verify your custom skill is successfully parsed and unblocked by checking your active tool indexes:
+```
+openclaw skills list
+```
+(You should see isight-vision displayed cleanly with a ✓ ready status in the table list).
 
-def speak(text):
-    if not text.strip():
-        return
-    print(f"🎙️ Broadcasting to TOZO Earbuds: {text}")
-    # Direct hardware route to your connected PipeWire bluetooth sink
-    subprocess.run(["espeak-ng", "-v", "en+f2", "-s", "150", text])
+## Step 7: Automated Wearable Controller Loop
+Because standard terminal shell sessions treat synthetic audio files as text-channel message attachments, we execute a continuous python controller script inside your project workspace (`/home/pi/iVisAssist/wearable_loop.py`) to automate hands-free captures and route clean speech natively. 
 
-def run_isight_sync():
-    print("\n🔄 Triggering autonomous iSight environment scan...")
+## Step 8: System Run Instructions
+Whenever you are ready to use your wearable device hands-free:
+1. Put your TOZO-T9 earbuds in and ensure they are paired.
+2. Run your workspace controller script inside your active virtual environment wrapper:
+```
+/home/pi/.virtualenvs/ai_agent/bin/python /home/pi/iVisAssist/wearable_loop.py
+```
+3. Put your Pi in a wearable pocket or harness, walk around your surroundings, and your headset will continuously describe key landmarks, safety hazards, and interesting visuals in real-time.
 
-    cmd = [
-        "openclaw", "agent",
-        "--agent", "main",
-        "--session-id", "isight-wearable-active",
-        "-m", "Scan my surroundings using the capture_scene tool and describe it concisely."
-    ]
-
-    # Captures stdout and stderr independently to prevent log intermixing
-    result = subprocess.run(cmd, capture_output=True, text=True)
-    stdout = result.stdout
-
-    # Fallback to check if the response landed in stderr or stdout
-    full_output = stdout if stdout.strip() else result.stderr
-
-    # Split output into clean lines to discard system initialization telemetry
-    clean_lines = []
-    for line in full_output.splitlines():
-        if "[plugins]" in line or "🦞" in line or "OpenClaw" in line:
-            continue
-        parsed_line = line.replace("◇", "").strip()
-        if parsed_line:
-            clean_lines.append(parsed_line)
-
-    final_response = " ".join(clean_lines).strip()
-
-    if final_response:
-        speech_text = final_response.replace("**", "")
-        speak(speech_text)
-    else:
-        print("⚠️ Waiting for system synchronization channel...")
-        if result.stderr.strip():
-            print(f"[Raw Debug Error]: {result.stderr.strip()}")
-
-if __name__ == "__main__":
-    print("🚀 iVisAssist Wearable Hybrid System: ONLINE")
-    print("🎧 Connected Device: TOZO-T9 Wireless Earbuds")
-    print("📷 Active Sensor: Raspberry Pi Camera Module 3 (imx708)")
-    print("👉 Press [Ctrl+C] in this shell to safely power down.")
-
-    try:
-        while True:
-            run_isight_sync()
-            print("⏳ Monitoring environment loop active...")
-            time.sleep(8)
-    except KeyboardInterrupt:
-        print("\nSafely suspending wearable companion software hooks.")
-🚀 Step 8: System Run InstructionsWhenever you are ready to use your wearable device hands-free:Put your TOZO-T9 earbuds in and ensure they are paired.Run your workspace controller script inside your active virtual environment wrapper:/home/pi/.virtualenvs/ai_agent/bin/python /home/pi/iVisAssist/wearable_loop.py
-Put your Pi in a wearable pocket or harness, walk around your surroundings, and your headset will continuously describe key landmarks, safety hazards, and interesting visuals in real-time.🐙 Step 9: Version Control (Pushing to GitHub)To backup your workspace skills cleanly to GitHub, simply track and push your code files directly from your workspace directory:cd /home/pi/iVisAssist
-git init
-git add setup.md wearable_loop.py
-git commit -m "feat: initial release of iVisAssist hands-free setup and wearable loop"
-git push origin main
-Your skills folder inside your workspace serves as an instant backup for anyone looking to build their own iSight wearable module!
