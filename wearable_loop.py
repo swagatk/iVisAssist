@@ -3,6 +3,9 @@ import time
 import sys
 import os
 
+# Configuration
+TTS_ENGINE = "flite"  # Options: "flite" or "espeak"
+
 def ensure_skills_linked():
     """Symlink the standalone skills directory into OpenClaw's global workspace so it initializes them cleanly."""
     target = os.path.expanduser("~/.openclaw/workspace/skills/isight")
@@ -21,22 +24,44 @@ def speak(text):
     if not text.strip():
         return
     print(f"🎙️ Broadcasting to TOZO Earbuds: {text}")
+    
+    # Wake up the Bluetooth earbuds to prevent initial audio truncation.
+    # Playing a silent, short command opens the audio sink before the main speech starts.
+    subprocess.run(["espeak-ng", "-a", "0", "wake"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    time.sleep(0.8)  # Give earbuds time to transition out of idle state
+    
     # Direct hardware route to your connected PipeWire bluetooth sink
-    subprocess.run(["espeak-ng", "-v", "en+f2", "-s", "150", text])
+    if TTS_ENGINE == "flite":
+        # 'slt' is a built-in female voice in flite that sounds much better than espeak
+        subprocess.run(["flite", "-voice", "slt", "-t", text])
+    else:
+        subprocess.run(["espeak-ng", "-v", "en+f2", "-s", "150", text])
 
 def run_isight_sync():
     print("\n🔄 Triggering autonomous iSight environment scan...")
+    start_time = time.time()
+    nonce = str(time.time_ns())
     
     # Calls your verified OpenClaw workspace tool configuration cleanly
     cmd = [
         "openclaw", "agent",
         "--agent", "main",
         "--session-id", "isight-wearable-active",
-        "-m", "Scan my surroundings using the capture_scene tool and describe it concisely."
+        # Requesting a single short sentence significantly reduces cloud LLM token generation latency
+        "-m", (
+            "You must call capture_scene exactly once for this turn and use only that fresh image. "
+            "Do not answer from memory or prior turns. "
+            "Describe the current scene in one short sentence. "
+            f"nonce={nonce}"
+        )
     ]
     
     # Capture standard output where OpenClaw prints the agent response text
     result = subprocess.run(cmd, capture_output=True, text=True)
+    
+    latency = time.time() - start_time
+    print(f"⏱️ Loop Latency (Cloud & Tool): {latency:.2f} seconds")
+    
     stdout = result.stdout
     
     # In non-interactive mode, stdout contains just the response.
