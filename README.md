@@ -80,20 +80,40 @@ Use when you want fully local inference with one model.
 
 ### `wearable_loop.py`
 
-Autonomous OpenClaw loop (no wake word) that repeatedly scans surroundings and speaks short summaries.
+Autonomous direct-vision loop (no wake word) that repeatedly scans surroundings and speaks short summaries.
 
 Key behavior:
-- Ensures `skills/isight` is linked into OpenClaw workspace
-- Calls `openclaw agent` periodically
+- Calls root `capture.sh` every loop to take a fresh image
+- Sends image directly to local Ollama API (`/api/chat`)
 - Speaks response to earbuds using local TTS
+- Does not use OpenClaw at runtime
 
 Run:
 
 ```bash
+# Optional overrides
+export OLLAMA_URL='http://localhost:11434/api/chat'
+export OLLAMA_MODEL='gemma4:31b-cloud'
+export LOOP_INTERVAL_SEC='8'
 python3 ./wearable_loop.py
 ```
 
 Use when you want continuous environment narration.
+
+### `capture.sh`
+
+Root capture helper used by `wearable_loop.py`.
+
+Key behavior:
+- Captures a frame with `rpicam-still`
+- Overwrites `/home/pi/live_snap.jpg` each run
+- Returns JSON including `image_path` for the caller
+
+Run manually (debug):
+
+```bash
+bash ./capture.sh
+```
 
 ### `setup_local_llm.py`
 
@@ -117,12 +137,13 @@ python3 ./agent_test.py
 
 ## Camera Capture Notes
 
-Scripts that need images save to:
+Direct wearable capture saves to:
 - `/home/pi/live_snap.jpg`
 
-Capture command fallback order:
-1. `raspi-still`
-2. `rpicam-still`
+`capture.sh` currently uses:
+1. `rpicam-still`
+
+Some chatbot scripts still include `raspi-still` -> `rpicam-still` fallback logic.
 
 If you see `Camera command not found: raspi-still`, that is expected on many Pi setups as long as `rpicam-still` succeeds.
 
@@ -144,7 +165,14 @@ ollama run moondream:latest
 python3 ./chatbot_local.py
 ```
 
-### 3) Hybrid (legacy routing)
+### 3) Direct wearable loop (recommended)
+
+```bash
+export OLLAMA_MODEL='gemma4:31b-cloud'
+python3 ./wearable_loop.py
+```
+
+### 4) Hybrid (legacy routing)
 
 ```bash
 python3 ./chatbot.py
@@ -165,11 +193,11 @@ Configured model is unavailable in your account/region. Set `OLLAMA_SINGLE_MODEL
 That model is gated for your current plan. Pick another available model.
 
 ### Repetitive or stale image descriptions
-- Ensure image file updates each capture
-- Use a fixed vision-capable model
-- Keep camera pointed at clearly different scenes for testing
+- Prefer `wearable_loop.py` direct mode (current default implementation)
+- Keep `OLLAMA_MODEL` fixed to a known vision-capable model
+- Verify `capture.sh` returns `/home/pi/live_snap.jpg` and that file mtime updates each loop
 
 ## Notes
 
 - Stop any loop with `Ctrl+C`.
-- `initial_setup.md` contains the deeper end-to-end deployment notes and hardware setup details.
+- `initial_setup.md` contains historical setup notes; current wearable runtime is direct (`wearable_loop.py` + `capture.sh`).
