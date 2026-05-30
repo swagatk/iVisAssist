@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Pi 4 camera capture profiles (override any value via env vars).
-# Profiles: low_latency, balanced, quality
+# Profiles: ultra_latency, low_latency, balanced, quality
 # Compatibility mode: by default stdout uses legacy JSON keys only:
 #   {"status":"success","image_path":"..."}
 # Set CAPTURE_EXTENDED_JSON=1 for additional metadata fields.
@@ -10,6 +10,11 @@ IMAGE_PATH="${CAPTURE_IMAGE_PATH:-/home/pi/live_snap.jpg}"
 EXTENDED_JSON="${CAPTURE_EXTENDED_JSON:-0}"
 
 case "$PROFILE" in
+	ultra_latency)
+		DEFAULT_WIDTH=160
+		DEFAULT_HEIGHT=120
+		DEFAULT_TIMEOUT_MS=140
+		;;
 	low_latency)
 		DEFAULT_WIDTH=320
 		DEFAULT_HEIGHT=240

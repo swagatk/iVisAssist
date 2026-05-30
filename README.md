@@ -183,3 +183,4 @@ Selected model is plan-gated. Switch to an available model.
 
 - Stop loops with `Ctrl+C`.
 - `initial_setup.md` reflects the current direct runtime flow.
+- `yolo_expt.md` discusses how to use a locally running YOLO detector to detect objects pass this information to a Local LLM for inference. How the accuracy of YOLO detector is not very good leading to wrong response. 
