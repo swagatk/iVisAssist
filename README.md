@@ -8,13 +8,23 @@ This repository contains voice and wearable assistant scripts using local Ollama
 - Microphone and speaker output configured
 - `SpeechRecognition`, `requests`, and a working audio stack (`espeak-ng`, `flite`)
 - Raspberry Pi camera tools (`rpicam-still`)
+- Ollama
 
 Install Python deps (example):
 
 ```bash
 pip install SpeechRecognition requests pyaudio
 ```
+```
+sudo apt install -y espeak-ng flite
+```
+Install Ollama
 
+```
+sudo apt update
+sudo apt install -y curl
+curl -fsSL https://ollama.com/install.sh | sh
+```
 ## Files At A Glance
 
 ### `chatbot_cloud.py`

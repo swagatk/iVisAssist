@@ -39,6 +39,7 @@ exit
 
 3. Quick audio test:
 
+
 ```bash
 espeak-ng -v en+f2 -s 150 "Testing system audio routing. Bluetooth link is active."
 ```
