@@ -25,6 +25,17 @@ sudo apt update
 sudo apt install -y curl
 curl -fsSL https://ollama.com/install.sh | sh
 ```
+
+For `florence_test.py` (Microsoft Florence-2 vision model), install PyTorch, Transformers, and Pillow:
+
+```bash
+pip install torch transformers Pillow
+```
+
+Notes:
+- On Raspberry Pi, install a CPU build of PyTorch if needed, e.g. `pip install torch --index-url https://download.pytorch.org/whl/cpu`
+- First run downloads the `microsoft/Florence-2-base` weights from Hugging Face (~0.5 GB)
+- `florence_test.py` uses `trust_remote_code=True`, so a recent `transformers` version is recommended
 ## Files At A Glance
 
 ### `chatbot_cloud.py`
@@ -133,6 +144,45 @@ Run:
 
 ```bash
 python3 ./agent_test.py
+```
+
+### `benchmark_isight.py`
+
+Single-image latency/throughput benchmark for a local Ollama vision model (default: `isight-fast`).
+
+Key behavior:
+- Streams tokens from `/api/generate` and prints output live
+- Reports image encode time, time to first token (TTFT), decode time, total turnaround, and tokens/sec
+- Warns on model cold-load overhead (first run)
+
+Run:
+
+```bash
+python3 ./benchmark_isight.py [image_path] [model_name]
+# defaults: /home/pi/live_snap.jpg, isight-fast
+```
+
+Requires `requests` and a running Ollama server with the model pulled (e.g. `ollama pull isight-fast`).
+
+### `florence_test.py`
+
+Standalone image captioning test using Microsoft's Florence-2-base model via Hugging Face Transformers (no Ollama).
+
+Key behavior:
+- Uses the `<MORE_DETAILED_CAPTION>` task token for a detailed caption
+- Runs on CPU in float32 with `attn_implementation="eager"`
+- Prints the caption and inference time
+
+Setup (first run downloads ~0.5 GB of model weights):
+
+```bash
+pip install torch transformers Pillow
+```
+
+Run (edit `image_path` in the script to point at your image, default `~/test_still.jpg`):
+
+```bash
+python3 ./florence_test.py
 ```
 
 ## Camera Capture Notes

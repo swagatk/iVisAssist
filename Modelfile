@@ -1,0 +1,9 @@
+FROM qwen2.5vl:3b
+
+# System prompt forcing concise edge descriptions
+SYSTEM "You are an assistant for a visually impaired user. Describe what is directly ahead in one concise sentence (under 20 words). Prioritize obstacles, people, and primary objects."
+
+# Limit generation to prevent CPU latency runaway
+PARAMETER num_predict 35
+PARAMETER temperature 0.2
+PARAMETER num_ctx 2048
