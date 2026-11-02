@@ -155,14 +155,28 @@ Key behavior:
 - Reports image encode time, time to first token (TTFT), decode time, total turnaround, and tokens/sec
 - Warns on model cold-load overhead (first run)
 
+#### Prerequisites & How to Create `isight-fast`
+
+`isight-fast` is a custom Ollama model defined by the repository's `Modelfile` (which wraps `qwen2.5vl:3b` with a concise system prompt and `num_predict 35` / `num_ctx 2048` parameters). Before running `benchmark_isight.py`:
+
+1. **Pull the base vision model and build `isight-fast` from `Modelfile`:**
+   ```bash
+   ollama pull qwen2.5vl:3b
+   ollama create isight-fast -f ./Modelfile
+   ```
+   *(Verify it exists with `ollama list`.)*
+
+2. **Ensure a test image exists at `/home/pi/live_snap.jpg`:**
+   ```bash
+   bash ./capture.sh
+   ```
+
 Run:
 
 ```bash
 python3 ./benchmark_isight.py [image_path] [model_name]
 # defaults: /home/pi/live_snap.jpg, isight-fast
 ```
-
-Requires `requests` and a running Ollama server with the model pulled (e.g. `ollama pull isight-fast`).
 
 ### `florence_test.py`
 
